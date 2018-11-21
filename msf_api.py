@@ -46,7 +46,7 @@ def pbp_to_json_file(game_id, file_name) :
             
 # pbp = play_by_play_json('2018-regular', '44792')
 
-json_file = "/tmp/pbpx.json"
+json_file = "/tmp/game43469.json"
 
-pbp_to_json_file('44793', json_file)
+pbp_to_json_file('43469', json_file)
  
