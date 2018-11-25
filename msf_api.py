@@ -80,10 +80,11 @@ def enrich_at_bat(ab_orig) :
             abp['playerSubs'] = 'False'
         if 'pitch' in abp.keys() :
             pitches +=1
-            abp['atBatPlayNumber']  = ab_inning + str(pitches)
+            abp['atBatNumber']  = ab_inning + str(pitches)
         if 'playStatus' in abp.keys() :
             abp_lineuphash = ''
             lineup = abp['playStatus']
+            last_outcount = lineup['outCount']
             for x in positions :
                 abp_lineuphash += x
                 if x in lineup.keys() and lineup[x] is not None  :
@@ -108,13 +109,31 @@ def enrich_at_bat(ab_orig) :
             for x in positions :
                 if x in abp['playStatus'] :
                     del abp['playStatus'][x]
-                    
         
-        ab['lineup_hashes'] = lineups_enountered
-        ab['pitches'] = pitches 
+        if 'batterUp' in abp.keys() :
+            if 'playStatus' in abp.keys() :
+                rob = 0
+                ps =abp['playStatus']
+                if ps["firstBaseRunner"] is not None :
+                    rob += 1
+                if ps["secondBaseRunner"]  is not None :
+                    rob += 1 
+                if ps["thirdBaseRunner"] is not None :
+                    rob += 1
+                ab['starting_rob'] = rob
+                if 'outCount' in ps.keys() :
+                    ab['starting_outcount'] = ps['outCount']
+                else :
+                    ab['starting_outcount'] = None        
+            else :
+                ab['starting_rob'] = None
+            
+    ab['lineup_hashes'] = lineups_enountered
+    ab['pitches'] = pitches 
+    ab['ending_outcount'] = last_outcount
 
     return ab
-
+    
 
 ################################################################################
 
@@ -131,3 +150,10 @@ def pull_some_games() :
             pbp_to_json_file(file_name= f'/tmp/game{game_id}.json', game_id=str(game_id))
 
         
+########### a query
+
+json_q = json.dumps({"query": { "match_all": {}}})
+url = "http://localhost:9200/plays/_search"
+headers ={'Content-Type' : 'application/json'}
+res=requests.get(url, headers=headers,  data = json_q)
+res.reason
