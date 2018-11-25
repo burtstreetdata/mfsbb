@@ -46,10 +46,12 @@ json_file = "/tmp/game43469.json"
 
 pbp_to_json_file('43469', json_file)
  
+################################################################################
 
-
-def enrich_bat_plays(ab_orig) :
+def enrich_at_bat(ab_orig) :
+    player_subs = False 
     ab = copy.deepcopy(ab_orig)
+    ab_inning = str(ab['inning']) + ab['inningHalf'][0]
     ab['lineups']=[]
     ab['lineup_hashes'] = []
     positions = ['pitcher', 'batter', 'catcher',
@@ -65,9 +67,20 @@ def enrich_bat_plays(ab_orig) :
 # list involved fielders
 # 2. enrich each at bat with the aggregate
     lineup_dicts = []
+    
     for abp  in ab['atBatPlay']  :
+        if 'playerSubstitution' in abp.keys():
+            del(abp)
+            player_subs = True
+            continue
+        if player_subs :
+            player_subs = False
+            abp['playerSubs']  = 'True'
+        else :
+            abp['playerSubs'] = 'False'
         if 'pitch' in abp.keys() :
-            pitches +=1 
+            pitches +=1
+            abp['atBatPlayNumber']  = ab_inning + str(pitches)
         if 'playStatus' in abp.keys() :
             abp_lineuphash = ''
             lineup = abp['playStatus']
@@ -98,6 +111,23 @@ def enrich_bat_plays(ab_orig) :
                     
         
         ab['lineup_hashes'] = lineups_enountered
-            
+        ab['pitches'] = pitches 
 
     return ab
+
+
+################################################################################
+
+# pull games
+# url -X GET https://api.mysportsfeeds.com/v2.0/pull/mlb/2018-regular/team_gamelogs.json?team=CHC\&date=from-20180801-to-20180831\&stats=none -u toden_here:MYSPORTSFEEDS --compressed > /c/tmp/august_games.json
+
+
+def pull_some_games() :
+    with open('c:/tmp/may_july_games.json') as f :
+        games = json.load(f)
+        log = games['gamelogs']
+        for g  in log : 
+            game_id = g['game']['id']
+            pbp_to_json_file(file_name= f'/tmp/game{game_id}.json', game_id=str(game_id))
+
+        
